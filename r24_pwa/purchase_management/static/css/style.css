@@ -1,0 +1,132 @@
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+main {
+    flex: 1;
+}
+.head-wrap {
+  margin:10px;
+}
+.foot-wrap {
+  margin:10px;
+}
+.tab-label {
+  color: White;
+  background: slategray;
+  font-weight: bold;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.2);
+  margin-bottom: -1px;
+  padding: 10px .5em;
+  border: 1px solid rgba(0,0,0,.2);
+  cursor: pointer;
+  display: block;
+}
+.tab-label:before {
+  content: '▼';
+  margin-right: .2em;
+  display:inline-block;
+  transform:rotate(-90deg);
+}
+.tab-switch:checked+.tab-label:before {
+  transform:rotate(0);
+}
+.tab-content {
+  height: 0;
+  padding: 0 15px;
+  overflow: hidden;
+  opacity: 0;
+}
+/* アクティブなタブ */
+.tab-switch:checked+.tab-label {
+  background: DeepSkyBlue;
+}
+.tab-switch:checked+.tab-label+.tab-content {
+  height: auto;
+  overflow: auto;
+  margin-bottom: -1px;
+  padding: 15px;
+  opacity: 1;
+  transition: .5s;
+  border: 1px solid LightGray;
+}
+/* ラジオボタン非表示 */
+.tab-switch {
+  display: none;
+}
+/* フッター */
+footer {
+  margin-top: auto;
+}
+
+.head-tab-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  margin:20px 0;
+}
+.head-tab-wrap:after {
+  content: '';
+  width: 100%;
+  height: 3px;
+  background: DeepSkyBlue;
+  display: block;
+  order: -1;
+}
+.head-tab-label {
+  color: White;
+  background: LightGray;
+  font-weight: bold;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.2);
+  white-space: nowrap;
+  text-align: center;
+  padding: 10px .5em;
+  order: -1;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  border-radius: 5px 5px 0 0;
+  flex: 1;
+}
+.head-tab-label:not(:last-of-type) {
+  margin-right: 5px;
+}
+.head-tab-content {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+/* アクティブなタブ */
+.head-tab-switch:checked+.head-tab-label {
+  background: DeepSkyBlue;
+}
+.head-tab-switch:checked+.head-tab-label+.head-tab-content {
+  height: auto;
+  overflow: auto;
+  padding: 15px;
+  opacity: 1;
+  transition: .5s opacity;
+  box-shadow: 0 0 3px rgba(0,0,0,.2);
+}
+/* ラジオボタン非表示 */
+.head-tab-switch {
+  display: none;
+}
+.button-right {
+  margin-right: 1.0em;
+}
+.button-right:before {
+  margin-right: 1.0em;
+}
+
+/* テーブル */
+.td-value {
+  width: 130px;
+  white-space: nowrap;
+}
+
+/* ロゴ */
+.fit-picture {
+    width: 1.5em;
+}

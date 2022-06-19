@@ -1,0 +1,69 @@
+{% extends "home/base.html" %}
+
+{% block content %}
+    <main>
+        <form class="form-upload" method="post" action="{% url 'edit' goods.id %}" id="update_goods">
+            {% csrf_token %}
+            <div class="form-group row">
+                <label for="group_name" class="col-5 col-form-label">グループ名</label>
+                <div class="col-7">
+                    <select class="form-control" id="group_name" name="group_name">
+                        {% for group_name in group %}
+                            <option value="{{ group_name }}"
+                            {% if group_name == selected_group %}selected{% endif %}>{{ group_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="goods_name" class="col-5 col-form-label">商品名</label>
+                <div class="col-7">
+                    <input type="text" class="form-control" id="goods_name" name="goods_name" placeholder="商品名" required value="{{ goods.name }}">
+                </div>
+            </div>
+            {% for store in compare_stores %}
+                <div class="form-group row">
+                    <label for="value_{{ store.name }}" class="col-5 col-form-label"><img class="fit-picture" src="/static/icon/{{ store.name }}.png"> {{ store.display }}</label>
+                    <div class="col-7">
+                        <input type="number" min="0" step="1" value="{{ store.value }}" class="form-control" id="value_{{ store.name }}" name="value_{{ store.name }}">
+                    </div>
+                </div>
+            {% endfor %}
+        </form>
+    </main>
+    <footer>
+        <div class="row">
+            <div class="col align-self-start">
+                <button class="btn btn-outline-primary" type="submit" name="submit" value="update_goods" form="update_goods">変更</button>
+            </div>
+            <div class="col-xs-1 align-self-end">
+                <button class="btn btn-outline-danger" type="submit"
+                        data-toggle="modal" data-target="#deleteConfirmModal">削除</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- modal -->
+    <div id="deleteConfirmModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">実行の確認</h4>
+                </div>
+                <div id="modal-text" class="modal-body">
+                    商品情報を削除してよろしいですか?
+                </div>
+                <div class="modal-footer">
+                    <button id="modal-cancel" type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+                    <button id="modal-delete" type="submit" class="btn btn-primary" name="submit" value="delete_goods" form="update_goods">実行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/src/input-spinner.js"></script>
+    <script>
+        $("input[type='number']").inputSpinner()
+    </script>
+
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "home/base.html" %}
+
+{% block content %}
+    <main>
+        <form class="form-upload" method="post" action="{% url 'list' %}" id="count_clear">
+            {% csrf_token %}
+            <div class="row">
+               <div class="col">
+                    <label>
+                        <select class="form-control">
+                            {% for group in data %}
+                                <option value={{ group.id }} {% if group.id == request.GET.id %}selected{% endif %}>{{ group.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                        <button id="copy-page" type="button" class="btn btn-sm btn-outline-primary">URLをコピー</button>
+               </div>
+            </div>
+            {% for group in data %}
+                <section id="{{ group.id }}" aria-hidden="true">
+                    <table class="table table-hover table-sm">
+                        <thead class="thead-light">
+                        <tr>
+                            <th><input type="checkbox" id="check-all-{{ group.id }}" name="check-all-{{ group.id }}"></th>
+                            <th>商品名</th>
+                            <th>価格</th>
+                            <th>数量</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for goods in group.goods %}
+                            <tr bgcolor="{{ date.bgcolor }}">
+                                <td class="chk_cell">
+                                    <input type="checkbox" class="check_goods_{{ group.id }}" id="clear_{{ goods.id }}"
+                                           name="clear_{{ goods.id }}" value="{{ goods.id }}">
+                                </td>
+                                <td>
+                                    <span>{{goods.name}}</span>
+                                </td>
+                                <td>
+                                    <span>{{goods.min_value}}</span>
+                                </td>
+                                <td>
+                                    <span>{{goods.count}}</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </section>
+                <script>
+                    <!-- チェックボックス操作 -->
+                    $('#check-all-{{ group.id }}').on('change', function(){
+                        var checked = $(this).prop('checked');
+                        $('.check_goods_{{ group.id }}').each(function(i, elm){
+                            $(elm).prop('checked', checked);
+                            $(elm).change();
+                        });
+                    });
+
+                    $('.check_goods_{{ group.id }}').on('change', function(){
+                        if (! $(this).prop('checked')) {
+                            $('#check-all-{{ group.id }}').prop('checked', false);
+                        }
+                    });
+
+                    $('section').hide();
+
+                </script>
+            {% endfor %}
+        </form>
+    </main>
+    <footer>
+        <div class="d-sm-inline-block col-sm-10">
+            <button class="btn btn-outline-primary" type="submit" id="clear_btn" name="clear_btn" value="clear"
+                    data-toggle="modal" data-target="#clearConfirmModal">クリア</button>
+        </div>
+    </footer>
+
+    <!-- modal -->
+    <div id="clearConfirmModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">実行の確認</h4>
+                </div>
+                <div id="modal-text" class="modal-body">
+                    購入数をクリアしてよろしいですか?
+                </div>
+                <div class="modal-footer">
+                    <button id="modal-cancel" type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+                    <button id="modal-save" type="submit" class="btn btn-primary" form="count_clear">実行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    　　<!-- 初期表示 -->
+        var val = $('select option:selected').val();
+        $('section#' + val).fadeIn();
+
+        <!-- コンボボックス選択変更時 -->
+        $('select').change(function () {
+            var val = $('select option:selected').val();
+            if (val == 'select') return;
+            $('section').hide();
+            $('section#' + val ).fadeIn();
+        });
+
+        document.getElementById("copy-page").onclick = function() {
+            $(document.body).append("<textarea id=\"copyTarget\" style=\"position:absolute; left:-9999px; top:0px;\" readonly=\"readonly\">" +location.href+ "</textarea>");
+            var val = $('select option:selected').val();
+            let obj = document.getElementById("copyTarget");
+            var str = obj.innerHTML;
+            str = str.replace(/id=.*/g, "id=" + val);
+            obj.innerHTML = str;
+
+            let range = document.createRange();
+            range.selectNode(obj);
+            let selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+
+        };
+    </script>
+{% endblock %}
