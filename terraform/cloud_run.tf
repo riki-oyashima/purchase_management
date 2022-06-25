@@ -5,7 +5,7 @@ resource "google_cloud_run_service" "cloud_run_purchase_management_pwa" {
   template {
     spec {
       containers {
-        image = "asia.gcr.io/${var.project}/r24-pwa-server"
+        image = "asia.gcr.io/${var.project}/pm-pwa-server"
       }
     }
   }
@@ -14,7 +14,7 @@ resource "google_cloud_run_service" "cloud_run_purchase_management_pwa" {
 data "google_iam_policy" "noauth" {
   binding {
     role = "roles/run.invoker"
-    members = var.r24_pwa_members
+    members = var.pm_pwa_members
   }
 }
 

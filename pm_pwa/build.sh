@@ -37,11 +37,11 @@ debug_before=`grep -e "^DEBUG\s*=" api/settings.py`
 sed -i -e "s/^DEBUG\s*=.*/DEBUG = False/g" api/settings.py
 
 # build実行
-image_name="asia.gcr.io/${proj}/r24-pwa-server"
+image_name="asia.gcr.io/${proj}/pm-pwa-server"
 if [ $local -eq 1 ]; then
 	docker build -t ${image_name}:latest .
 else
-	gcloud builds submit --tag asia.gcr.io/${proj}/r24-pwa-server --project ${proj}
+	gcloud builds submit --tag asia.gcr.io/${proj}/pm-pwa-server --project ${proj}
 fi
 
 # staticファイルをStorageに格納

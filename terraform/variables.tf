@@ -10,7 +10,7 @@ variable "zone" {
   default = "asia-northeast1-b"
 }
 
-variable "r24_pwa_members" {
+variable "pm_pwa_members" {
   default = [
     "user:user.mail.address@gmail.com",
     "allUsers",
