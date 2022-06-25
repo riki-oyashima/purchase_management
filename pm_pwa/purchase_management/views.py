@@ -8,8 +8,8 @@ from django.views.generic import TemplateView
 from google.cloud import datastore
 from pprint import pprint
 
-from r24_pwa.purchase_management.const import *
-from r24_pwa.api import settings
+from pm_pwa.purchase_management.const import *
+from pm_pwa.api import settings
 
 with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"], "r") as f:
     PROJECT_ID = json.loads(f.read()).get("project_id")

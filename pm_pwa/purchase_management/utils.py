@@ -1,7 +1,7 @@
 import math
 from google.cloud import datastore
 
-from r24_pwa.purchase_management.const import *
+from pm_pwa.purchase_management.const import *
 
 
 def update_min_store():
