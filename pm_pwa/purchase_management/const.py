@@ -33,11 +33,11 @@ COMPARE_DISP_NAME = {
 
 # 割引率
 COMPARE_DISCOUNT_RATE = {
-    CompareStore.RAKUTEN: 0.15,
+    CompareStore.RAKUTEN.value: 0.15,
 }
 
 # ポイント還元率
 COMPARE_POINT_RATE = {
-    CompareStore.RAKUTEN: 0.065,
-    CompareStore.YODOBASHI: 0.1,
+    CompareStore.RAKUTEN.value: 0.065,
+    CompareStore.YODOBASHI.value: 0.1,
 }

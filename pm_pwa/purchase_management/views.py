@@ -1,15 +1,15 @@
 import json
-import math
 import os
 from datetime import datetime
 
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
-from google.cloud import datastore
 from pprint import pprint
 
 from pm_pwa.purchase_management.const import *
 from pm_pwa.api import settings
+from pm_pwa.purchase_management.utils.database.datastore import DataStore
+from pm_pwa.purchase_management.utils.database.data_class import Group, Goods
 
 with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"], "r") as f:
     PROJECT_ID = json.loads(f.read()).get("project_id")
@@ -25,32 +25,21 @@ class TopView(TemplateView):
     def get(self, request, *args, **kwargs):
         params = params_base.copy()
         params["data"] = []
-        client = datastore.Client()
 
         # タブ一覧を取得
         goods_map = {}
-        query = client.query(kind='group')
-        for group in query.fetch():
-            goods_map[group.key.id] = {"name": group["name"], "goods": []}
+        datastore_ = DataStore()
+        for group in [x.to_dict() for x in datastore_.get_all_group()]:
+            goods_map[group["id"]] = {"name": group["name"], "goods": []}
 
         # 商品一覧を取得
         sum_price = {store.value: {"id": store.value,
                                    "name": COMPARE_DISP_NAME.get(store, store.value),
                                    "sum": 0} for store in CompareStore}
-        query = client.query(kind='goods')
-        for goods in query.fetch():
-            # 最安値を登録
-            goods["min_value"] = goods[f"value_{goods['min_store']}"]
+        for goods in [x.to_dict() for x in datastore_.get_all_goods()]:
             # 複数店舗の情報が登録されているか(比較されているか)？
-            compare_count = 0
-            goods["compare_exist"] = False
-            for store in CompareStore:
-                if f"value_{store.value}" in goods:
-                    if goods[f"value_{store.value}"]:
-                        compare_count += 1
-            if compare_count >= 2:
-                goods["compare_exist"] = True
-            goods_map[goods["group"].id]["goods"].append(goods)
+            goods["compare_exist"] = True if goods["compare"] > 1 else False
+            goods_map[goods["group_id"]]["goods"].append(goods)
             # 合計金額を加算
             sum_price[goods['min_store']]["sum"] += goods["min_value"] * goods["count"]
 
@@ -68,19 +57,19 @@ class TopView(TemplateView):
     @staticmethod
     def post(request, *args, **kwargs):
         # 値を更新
+        datastore_ = DataStore()
         for key, value in request.POST.items():
+            print(key, value)
             # goodsの購入数の値以外は無視
             if not key.startswith("goods_count-"):
                 continue
             _, _id, before = key.split("-")
+            if _id == 5673742378205184:
+                print(before, value)
             # 数値が変更されていない商品は無視
             if before == value:
                 continue
-            client = datastore.Client()
-            key = client.key("goods", int(_id))
-            entity = client.get(key)
-            entity["count"] = int(value)
-            client.put(entity)
+            datastore_.update_goods_count(int(_id), int(value))
 
         # 最新情報取得
         response = redirect("/")
@@ -92,11 +81,10 @@ class AddView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         params = params_base.copy()
-        client = datastore.Client()
+        datastore_ = DataStore()
 
         # タブ一覧を取得
-        query = client.query(kind='group')
-        group = [x["name"] for x in query.fetch()]
+        group = [x.to_dict().get("name") for x in datastore_.get_all_group()]
 
         # 戻り値作成
         params["group"] = group
@@ -108,56 +96,20 @@ class AddView(TemplateView):
     def post(self, request, *args, **kwargs):
         # 値を更新
         params = {key: value for key, value in request.POST.items()}
-        client = datastore.Client()
+        datastore_ = DataStore()
         if params.get("submit") == "add_group":
             # グループの登録
             group_name = params.get("group_name")
-            # 同一名称のグループが登録済みか確認
-            query = client.query(kind='group')
-            query.add_filter('name', '=', group_name)
-            query_iter = query.fetch()
-            if len([entity for entity in query_iter]) == 0:
-                # 未登録の場合は登録
-                key = client.key("group")
-                entity = datastore.Entity(key)
-                entity.update({"name": group_name})
-                client.put(entity)
+            datastore_.add_group(Group(None, group_name))
         elif params.get("submit") == "add_goods":
             # 商品の登録
-            query = client.query(kind='group')
-            query.add_filter('name', '=', params.get("group"))
-            query_iter = query.fetch()
-            group = [entity for entity in query_iter][0]
-            key = client.key("goods")
-            entity = datastore.Entity(key)
-            data = {"group": group.key,
-                    "name": params.get("goods_name"),
-                    "count": 0,
-                    "last_updated": int(datetime.now().timestamp()),
-                    }
-
-            # 最安の店舗を算出
-            min_store = None
-            min_value = 0
+            group = datastore_.get_group(params.get("group"))
+            stores = {}
             for store in CompareStore:
                 key = f"value_{store.value}"
-                # 比較店舗の価格を登録
-                data[key] = int(params.get(key, 0))
-                if data[key]:
-                    compare_value = math.ceil(data[key] *
-                                              (1 - COMPARE_DISCOUNT_RATE.get(store, 0)) *
-                                              (1 - COMPARE_POINT_RATE.get(store, 0)))
-                    if min_store is None or compare_value < min_value:
-                        min_store = store.value
-                        min_value = compare_value
-            # 価格未設定の場合はデフォルト値を設定
-            if not min_store:
-                min_store = CompareStore.RAKUTEN
-            # 最安の店舗名を登録
-            data["min_store"] = min_store
-
-            entity.update(data)
-            client.put(entity)
+                stores[store.value] = int(params.get(key, 0))
+            goods = Goods(None, group, params.get("goods_name"), 0, int(datetime.now().timestamp()), stores)
+            datastore_.add_goods(goods)
 
         # 最新情報取得
         response = redirect("/")
@@ -169,28 +121,21 @@ class EditView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         params = params_base.copy()
-        client = datastore.Client()
+        datastore_ = DataStore()
 
         # タブ一覧を取得
-        query = client.query(kind='group')
-        group = [x["name"] for x in query.fetch()]
+        group = [x.to_dict().get("name") for x in datastore_.get_all_group()]
 
         # 商品情報を取得
-        key = client.key("goods", int(request.path.split("/")[-1]))
-        entity = client.get(key)
-
-        # 所属グループを取得
-        selected_key = entity["group"]
-        group_entity = client.get(selected_key)
+        goods = datastore_.get_goods(int(request.path.split("/")[-1]))
 
         # 戻り値作成
         params["group"] = group
-        params["goods"] = entity
-        params["selected_group"] = group_entity["name"]
+        params["goods"] = goods.to_dict()
+        params["selected_group"] = goods.group.name
         params["compare_stores"] = []
         for store in CompareStore:
-            key = f"value_{store.value}"
-            value = entity[key] if key in entity else 0
+            value = goods.stores[store.value] if store.value in goods.stores else 0
             params["compare_stores"].append({"name": store.value,
                                              "display": COMPARE_DISP_NAME.get(store),
                                              "value": value})
@@ -199,63 +144,35 @@ class EditView(TemplateView):
 
     def post(self, request, *args, **kwargs):
         params = {key: value for key, value in request.POST.items()}
-        client = datastore.Client()
+        datastore_ = DataStore()
 
         # 商品情報を取得
-        key = client.key("goods", int(request.path.split("/")[-1]))
-        entity = client.get(key)
+        goods = datastore_.get_goods(int(request.path.split("/")[-1]))
 
         if params.get("submit") == "update_goods":
-            # 所属グループを取得
-            selected_key = entity["group"]
-            group_entity = client.get(selected_key)
-
             update_exist = False
-            if group_entity["name"] != params.get("group_name"):
-                # 変更後の所属グループを取得
-                query = client.query(kind='group')
-                query.add_filter('name', '=', params.get("group_name"))
-                query_iter = query.fetch()
-                group = [entity for entity in query_iter][0]
-                entity["group"] = group.key
+            if goods.group.name != params.get("group_name"):
+                # 所属グループを更新
+                goods.group = datastore_.get_group(params.get("group_name"))
                 update_exist=True
-            if entity["name"] != params.get("goods_name"):
-                entity["name"] = params.get("goods_name")
+            if goods.name != params.get("goods_name"):
+                goods.name = params.get("goods_name")
                 update_exist = True
             # 比較店舗の価格を設定
             for store in CompareStore:
                 key = f"value_{store.value}"
-                if key not in entity or entity[key] != int(params.get(key, 0)):
-                    entity[key] = int(params.get(key, 0))
+                if store.value not in goods.stores or goods.stores[store.value] != int(params.get(key, 0)):
+                    goods.stores[store.value] = int(params.get(key, 0))
                     update_exist = True
-            # 最安の店舗を算出
-            min_store = None
-            min_value = 0
-            for store in CompareStore:
-                key = f"value_{store.value}"
-                if entity[key]:
-                    compare_value = math.ceil(entity[key] *
-                                              (1 - COMPARE_DISCOUNT_RATE.get(store, 0)) *
-                                              (1 - COMPARE_POINT_RATE.get(store, 0)))
-                    if min_store is None or compare_value < min_value:
-                        min_store = store.value
-                        min_value = compare_value
-            # 価格未設定の場合はデフォルト値を設定
-            if not min_store:
-                min_store = CompareStore.RAKUTEN
-            # 最安の店舗名を登録
-            if "min_store" not in entity or entity["min_store"] != min_store:
-                entity["min_store"] = min_store
-                update_exist = True
 
             # 登録情報更新
             if update_exist:
-                entity["last_updated"] = int(datetime.now().timestamp())
-                client.put(entity)
+                goods.last_updated = int(datetime.now().timestamp())
+                datastore_.add_goods(goods)
                 print("update")
         elif params.get("submit") == "delete_goods":
-            pprint({"operation": "delete", "target": entity}, width=40)
-            client.delete(key)
+            pprint({"operation": "delete", "target": goods.to_dict()}, width=40)
+            datastore_.delete_goods(goods)
 
         # 最新情報取得
         response = redirect("/")
@@ -268,18 +185,16 @@ class ListView(TemplateView):
     def get(self, request, *args, **kwargs):
         params = params_base.copy()
         params["data"] = []
-        client = datastore.Client()
+        datastore_ = DataStore()
 
         # 店舗ごとにマッピング
         store_map = {store.value: {"id": store.value,
                                    "name": COMPARE_DISP_NAME.get(store, store.value),
                                    "goods": []} for store in CompareStore}
         # 商品一覧を取得
-        query = client.query(kind='goods')
-        query.add_filter('count', '>', 0)
-        for goods in query.fetch():
-            goods["min_value"] = goods[f"value_{goods['min_store']}"]
-            store_map[goods['min_store']]["goods"].append(goods)
+        for goods in datastore_.get_buy_goods():
+            goods_dict = goods.to_dict()
+            store_map[goods_dict['min_store']]["goods"].append(goods_dict)
 
         # 戻り値作成
         params["data"] = list(store_map.values())
@@ -290,18 +205,17 @@ class ListView(TemplateView):
     def post(self, request, *args, **kwargs):
         # 値をクリア
         params = {key: value for key, value in request.POST.items()}
-        client = datastore.Client()
-        entities = []
+        datastore_ = DataStore()
+
+        clear_goods = []
         for key, value in params.items():
             if not key.startswith("clear_"):
                 continue
-            ds_key = client.key("goods", int(value))
-            entity = client.get(ds_key)
-            entities.append(entity)
-        pprint({"operation": "clear", "targets": entities}, width=40)
-        for entity in entities:
-            entity["count"] = 0
-            client.put(entity)
+            goods = datastore_.get_goods(int(value))
+            clear_goods.append(goods)
+        pprint({"operation": "clear", "targets": [x.to_dict() for x in clear_goods]}, width=40)
+        for goods in clear_goods:
+            datastore_.update_goods_count(goods.get_id(), 0)
 
         # 最新情報取得
         response = redirect("/")
