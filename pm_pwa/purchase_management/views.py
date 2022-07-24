@@ -192,9 +192,15 @@ class ListView(TemplateView):
                                    "name": COMPARE_DISP_NAME.get(store, store.value),
                                    "goods": []} for store in CompareStore}
         # 商品一覧を取得
+        zero_stores = [store.value for store in CompareStore]
         for goods in datastore_.get_buy_goods():
             goods_dict = goods.to_dict()
             store_map[goods_dict['min_store']]["goods"].append(goods_dict)
+            if goods_dict['min_store'] in zero_stores:
+                zero_stores.remove(goods_dict['min_store'])
+        if zero_stores:
+            for store in zero_stores:
+                del store_map[store]
 
         # 戻り値作成
         params["data"] = list(store_map.values())
