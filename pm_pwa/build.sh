@@ -26,6 +26,9 @@ done
 CURRENT=$(cd $(dirname $0); pwd)
 cd ${CURRENT}
 
+# バージョン取得
+version=`cat ../version.txt`
+
 # プロジェクト選択
 proj=`gcloud projects list --format="value(project_id)" | fzf --header "[GCP Project]"`
 
@@ -36,16 +39,19 @@ gsutil cp -rp gs://${proj}-sa-master/service.json .
 debug_before=`grep -e "^DEBUG\s*=" api/settings.py`
 sed -i -e "s/^DEBUG\s*=.*/DEBUG = False/g" api/settings.py
 
+# staticファイルをStorageに格納
+gsutil -m cp -rp purchase_management/static/* gs://${proj}-purchase-management-static/
+
 # build実行
 image_name="asia.gcr.io/${proj}/pm-pwa-server"
 if [ $local -eq 1 ]; then
 	docker build -t ${image_name}:latest .
+	if [ "$?" -eq 0 ]; then
+	  gcloud container images add-tag asia.gcr.io/${proj}/pm-pwa-server:latest asia.gcr.io/${proj}/pm-pwa-server:${version} -q
+  fi
 else
 	gcloud builds submit --tag asia.gcr.io/${proj}/pm-pwa-server --project ${proj}
 fi
-
-# staticファイルをStorageに格納
-gsutil -m cp -rp purchase_management/static/* gs://${proj}-purchase-management-static/
 
 # サービスアカウントキー削除
 rm -rf service.json
