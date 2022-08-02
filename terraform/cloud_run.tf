@@ -5,7 +5,7 @@ resource "google_cloud_run_service" "cloud_run_purchase_management_pwa" {
   template {
     spec {
       containers {
-        image = "asia.gcr.io/${var.project}/pm-pwa-server:latest"
+        image = "asia.gcr.io/${var.project}/pm-pwa-server:${var.image_version}"
       }
     }
   }

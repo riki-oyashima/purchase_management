@@ -45,12 +45,12 @@ gsutil -m cp -rp purchase_management/static/* gs://${proj}-purchase-management-s
 # build実行
 image_name="asia.gcr.io/${proj}/pm-pwa-server"
 if [ $local -eq 1 ]; then
-	docker build -t ${image_name}:latest .
-	if [ "$?" -eq 0 ]; then
-	  gcloud container images add-tag asia.gcr.io/${proj}/pm-pwa-server:latest asia.gcr.io/${proj}/pm-pwa-server:${version} -q
-  fi
+  docker build -t ${image_name}:latest .
 else
-	gcloud builds submit --tag asia.gcr.io/${proj}/pm-pwa-server --project ${proj}
+  gcloud builds submit --tag asia.gcr.io/${proj}/pm-pwa-server --project ${proj}
+  if [ "$?" -eq 0 ]; then
+    gcloud container images add-tag asia.gcr.io/${proj}/pm-pwa-server:latest asia.gcr.io/${proj}/pm-pwa-server:${version} -q
+  fi
 fi
 
 # サービスアカウントキー削除
