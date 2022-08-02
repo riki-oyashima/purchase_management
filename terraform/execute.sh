@@ -14,6 +14,8 @@ if [ $? -ne 0 ]; then
     exit
 fi
 
+export TF_VAR_image_version=`cat ../version.txt`
+
 terraform apply
 
 sed -i -e "s/${proj}/PROJECT/g" backend.tf

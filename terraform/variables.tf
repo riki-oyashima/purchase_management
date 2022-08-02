@@ -17,3 +17,8 @@ variable "pm_pwa_members" {
   ]
 }
 
+variable "image_version" {
+  type   = string
+  default = "latest"
+}
+

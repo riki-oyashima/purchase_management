@@ -1,5 +1,6 @@
 {% extends "home/base.html" %}
 
+{% load static %}
 {% block content %}
     <main>
         <form class="form-upload" method="post" action="{% url 'edit' goods.id %}" id="update_goods">
@@ -23,7 +24,9 @@
             </div>
             {% for store in compare_stores %}
                 <div class="form-group row">
-                    <label for="value_{{ store.name }}" class="col-5 col-form-label"><img class="fit-picture" src="/static/icon/{{ store.name }}.png"> {{ store.display }}</label>
+                    {% with image_static='icon/'|add:store.name|add:'.png' %}
+                        <label for="value_{{ store.name }}" class="col-5 col-form-label"><img class="fit-picture" src="{% static image_static %}"> {{ store.display }}</label>
+                    {% endwith %}
                     <div class="col-7">
                         <input type="number" min="0" step="1" value="{{ store.value }}" class="form-control" id="value_{{ store.name }}" name="value_{{ store.name }}">
                     </div>

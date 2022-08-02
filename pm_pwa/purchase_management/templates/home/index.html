@@ -1,15 +1,17 @@
 {% extends "home/base.html" %}
 
+{% load static %}
 {% block head %}
     <link rel="manifest" id="my-manifest">
-    <link rel="apple-touch-icon" href="./static/icon-72x72.png" sizes="72x72">
-    <link rel="apple-touch-icon" href="./static/icon-114x114.png" sizes="114x114">
-    <link rel="apple-touch-icon" href="./static/icon-120x120.png" sizes="120x120">
-    <link rel="apple-touch-icon" href="./static/icon-144x144.png" sizes="144x144">
+    <link rel="apple-touch-icon" href="{% static 'icon-72x72.png' %}" sizes="72x72">
+    <link rel="apple-touch-icon" href="{% static 'icon-114x114.png' %}" sizes="114x114">
+    <link rel="apple-touch-icon" href="{% static 'icon-120x120.png' %}" sizes="120x120">
+    <link rel="apple-touch-icon" href="{% static 'icon-144x144.png' %}" sizes="144x144">
     <script>
         let setManifestURL = function () {
             let startUrl = window.location.href;
-            let url_origin = window.location.origin;
+            let icon_192x192 = "{% static 'icon-192x192.png' %}".split("&amp;").join("&")
+            let icon_512x512 = "{% static 'icon-512x512.png' %}".split("&amp;").join("&")
 
             let manifest = {
                 "name": "R24",
@@ -21,12 +23,13 @@
                 "start_url": startUrl,
                 "icons": [
                     {
-                        "src": url_origin + "/static/icon-192x192.png",
+                        "src": icon_192x192,
                         "sizes": "192x192",
                         "type": "image/png"
                     },
                     {
-                        "src": url_origin + "/static/icon-512x512.png",
+                        {#"src": url_origin + "/icon-512x512.png",#}
+                        "src": icon_512x512,
                         "sizes": "512x512",
                         "type": "image/png"
                     }
@@ -83,7 +86,9 @@
                         {% for store in sum_price %}
                             <tr bgcolor="{{ date.bgcolor }}">
                                 <td>
-                                    <img class="fit-picture" src="/static/icon/{{ store.id }}.png">{{store.name}}
+                                    {% with image_static='icon/'|add:store.id|add:'.png' %}
+                                        <img class="fit-picture" src="{% static image_static %}">{{store.name}}
+                                    {% endwith %}
                                 </td>
                                 <td>
                                     <span>{{store.sum}}</span>
@@ -108,7 +113,9 @@
                             {% for goods in group.goods %}
                                 <tr bgcolor="{{ date.bgcolor }}">
                                     <td>
-                                        <a href="{% url 'edit' goods.id%}"><img class="fit-picture" src="/static/icon/{{ goods.min_store }}.png"> {% if goods.compare_exist == False %}* {% endif %}{{goods.name}}</a>
+                                        {% with image_static='icon/'|add:goods.min_store|add:'.png' %}
+                                            <a href="{% url 'edit' goods.id%}"><img class="fit-picture" src="{% static image_static %}"> {% if goods.compare_exist == False %}* {% endif %}{{goods.name}}</a>
+                                        {% endwith %}
                                     </td>
                                     <td>
                                         <span>{{goods.min_value}}</span>
@@ -148,7 +155,7 @@
         </div>
     </footer>
 
-    <script src="./static/src/input-spinner.js"></script>
+    <script src="{% static "src/input-spinner.js" %}"></script>
     <script>
         $("input[type='number']").inputSpinner()
     </script>
